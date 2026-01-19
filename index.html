@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Demo - Customer Verification</title>
+    <style>
+        :root {
+            --primary-color: #646cff;
+            --bg-color: #f9f9f9;
+            --text-color: #213547;
+            --error-color: #e74c3c;
+            --success-color: #2ecc71;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"],
+        input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(100, 108, 255, 0.1);
+        }
+
+        .input-error {
+            border-color: var(--error-color) !important;
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.85rem;
+            margin-top: 0.35rem;
+            display: none;
+            /* Hidden by default */
+        }
+
+        button {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.875rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: #535bf2;
+        }
+
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        /* Success State */
+        .success-view {
+            text-align: center;
+            display: none;
+        }
+
+        .success-icon {
+            color: var(--success-color);
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            background-color: #e5e7eb;
+            color: #374151;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Customer Verification</h1>
+            <p style="color: #6b7280;">QA Automation Demo Target</p>
+        </header>
+
+        <div class="card">
+            <!-- Success View -->
+            <div id="successView" class="success-view">
+                <div class="success-icon">✓</div>
+                <h2>Submission Successful!</h2>
+                <p>Your verification request has been received.</p>
+                <div id="apiStatusResult" class="status-badge">Checking status...</div>
+                <br><br>
+                <button onclick="resetForm()" style="background-color: #4b5563;">Reset Form</button>
+            </div>
+
+            <!-- Verification Form -->
+            <form id="verificationForm" novalidate>
+                <div class="form-group">
+                    <label for="name">Full Name <span style="color: var(--error-color)">*</span></label>
+                    <input type="text" id="name" name="name" required>
+                    <div class="error-message" id="error-name">Name is required</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address <span style="color: var(--error-color)">*</span></label>
+                    <input type="email" id="email" name="email" required>
+                    <div class="error-message" id="error-email">Please enter a valid email</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dob">Date of Birth <span style="color: var(--error-color)">*</span></label>
+                    <input type="date" id="dob" name="dob" required>
+                    <div class="error-message" id="error-dob">You must be at least 18 years old</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="idFile">Upload ID Document</label>
+                    <input type="file" id="idFile" name="idFile" accept=".png,.jpg,.pdf">
+                </div>
+
+                <button type="submit" id="submitBtn">Submit Verification</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- Mock Backend Logic (Simulating API) ---
+        const mockApi = {
+            rules: {
+                min_age: 18,
+                required: ['name', 'email', 'dob']
+            },
+
+            // Simulates GET /api/validation-rules
+            getRules: async () => {
+                return new Promise(resolve => setTimeout(() => resolve(mockApi.rules), 300));
+            },
+
+            // Simulates GET /api/user-verification?email=...
+            verifyUser: async (email) => {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        if (email.toLowerCase().includes('verified')) resolve({ status: 'Verified' });
+                        else if (email.toLowerCase().includes('pending')) resolve({ status: 'Pending' });
+                        else resolve({ status: 'New User' });
+                    }, 600);
+                });
+            },
+
+            // Simulates POST /api/submit
+            submit: async (data) => {
+                return new Promise(resolve => setTimeout(() => resolve({ success: true, id: Math.floor(Math.random() * 10000) }), 1000));
+            }
+        };
+
+        // --- Frontend Logic ---
+        const form = document.getElementById('verificationForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const successView = document.getElementById('successView');
+        const apiStatusResult = document.getElementById('apiStatusResult');
+
+        // Validation State
+        let validationRules = null;
+
+        // Load Rules on Init
+        (async function init() {
+            try {
+                validationRules = await mockApi.getRules();
+                console.log('Rules loaded:', validationRules);
+            } catch (e) {
+                console.error('Failed to load rules');
+            }
+        })();
+
+        // Form Submit Handler
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!validateForm()) return;
+
+            setLoading(true);
+
+            const formData = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                dob: document.getElementById('dob').value,
+            };
+
+            try {
+                // 1. Simulate API call: Check User Status
+                const userStatus = await mockApi.verifyUser(formData.email);
+
+                // 2. Simulate API call: Submit Form
+                await mockApi.submit(formData);
+
+                // Show Success
+                showSuccess(userStatus);
+            } catch (err) {
+                alert("An error occurred during submission.");
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function validateForm() {
+            let isValid = true;
+
+            // Name
+            const name = document.getElementById('name');
+            if (!name.value.trim()) {
+                showError('name', 'Name is required');
+                isValid = false;
+            } else {
+                clearError('name');
+            }
+
+            // Email
+            const email = document.getElementById('email');
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!email.value.trim()) {
+                showError('email', 'Email is required');
+                isValid = false;
+            } else if (!emailRegex.test(email.value)) {
+                showError('email', 'Invalid email format');
+                isValid = false;
+            } else {
+                clearError('email');
+            }
+
+            // DOB (Age Check)
+            const dob = document.getElementById('dob');
+            if (!dob.value) {
+                showError('dob', 'Date of Birth is required');
+                isValid = false;
+            } else {
+                const age = calculateAge(new Date(dob.value));
+                const minAge = validationRules ? validationRules.min_age : 18;
+                if (age < minAge) {
+                    showError('dob', `You must be at least ${minAge} years old`);
+                    isValid = false;
+                } else {
+                    clearError('dob');
+                }
+            }
+
+            return isValid;
+        }
+
+        function calculateAge(birthday) {
+            const ageDifMs = Date.now() - birthday.getTime();
+            const ageDate = new Date(ageDifMs);
+            return Math.abs(ageDate.getUTCFullYear() - 1970);
+        }
+
+        function showError(fieldId, message) {
+            const input = document.getElementById(fieldId);
+            const errorDiv = document.getElementById(`error-${fieldId}`);
+            input.classList.add('input-error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function clearError(fieldId) {
+            const input = document.getElementById(fieldId);
+            const errorDiv = document.getElementById(`error-${fieldId}`);
+            input.classList.remove('input-error');
+            errorDiv.style.display = 'none';
+        }
+
+        function setLoading(isLoading) {
+            submitBtn.disabled = isLoading;
+            submitBtn.textContent = isLoading ? 'Verifying...' : 'Submit Verification';
+        }
+
+        function showSuccess(statusData) {
+            form.style.display = 'none';
+            successView.style.display = 'block';
+            apiStatusResult.textContent = `User Status: ${statusData.status}`;
+
+            // Dynamic badge color
+            if (statusData.status === 'Verified') {
+                apiStatusResult.style.backgroundColor = '#dcfce7'; // green-100
+                apiStatusResult.style.color = '#166534'; // green-800
+            } else if (statusData.status === 'Pending') {
+                apiStatusResult.style.backgroundColor = '#fef9c3'; // yellow-100
+                apiStatusResult.style.color = '#854d0e'; // yellow-800
+            }
+        }
+
+        function resetForm() {
+            form.reset();
+            successView.style.display = 'none';
+            form.style.display = 'block';
+            // Clear errors
+            ['name', 'email', 'dob'].forEach(clearError);
+        }
+    </script>
+
+</body>
+
+</html>
